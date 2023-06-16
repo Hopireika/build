@@ -1,0 +1,27 @@
+name: Kernel Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      toolchain:
+          description: 'Write toolchain name gcc/clang'
+          required: true
+
+env:
+  TELEGRAM_TOKEN: ${{ secrets.TG_TOKEN }}
+  TELEGRAM_CHAT: ${{ secrets.TG_CHAT }}
+  COMP: ${{ github.event.inputs.toolchain }}
+  GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/neutron-projects/docker-image:arch-neutron
+    steps:
+      - uses: actions/checkout@v3.0.2
+      - name: Start building kernel
+        run: |
+             git clone https://Hoppless:$GH_TOKEN@github.com/Hopireika/kernel_xiaomi_mt6768 kernel
+             cp kernel.sh kernel
+             cd kernel && bash kernel.sh
