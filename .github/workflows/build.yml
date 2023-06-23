@@ -6,11 +6,15 @@ on:
       toolchain:
           description: 'Write toolchain name gcc/clang'
           required: true
+      pushto:
+          description: 'Send kernel file to github/telegram'
+          required: true
 
 env:
   TELEGRAM_TOKEN: ${{ secrets.TG_TOKEN }}
   TELEGRAM_CHAT: ${{ secrets.TG_CHAT }}
   COMP: ${{ github.event.inputs.toolchain }}
+  SEND_TO: ${{ github.event.inputs.pushto }}
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
 jobs:

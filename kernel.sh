@@ -35,6 +35,7 @@ DEVICE="merlin"
 
 # Misc info
 CLEAN="1"
+PUSH="$SEND_TO"
 SIGN="0"
 if [[ $SIGN == 1 ]]; then
 	#Check for java
@@ -59,10 +60,10 @@ clone() {
 	if [[ $COMPILER == "gcc" ]]; then
 		echo -e "\n\e[1;93m[*] Cloning Fortune GCC \e[0m"
 		wget "$(curl -s https://raw.githubusercontent.com/Fortune-Toolchains/gcc-arm/master/gcc-arm-link.txt)" -O "gcc-arm.tar.gz"
-		wget "$(curl -s https://raw.githubusercontent.com/Fortune-Toolchains/gcc-arm/master/gcc-arm64-link.txt)" -O "gcc-arm64.tar.gz"
+		wget "$(curl -s https://raw.githubusercontent.com/Fortune-Toolchains/gcc-arm64/master/gcc-arm64-link.txt)" -O "gcc-arm64.tar.gz"
 		mkdir gcc32 && mkdir gcc64
 		tar -xf gcc-arm.tar.gz -C gcc32
-		tar -xf gcc-arm.tar.gz -C gcc64
+		tar -xf gcc-arm64.tar.gz -C gcc64
 		rm -rf gcc-arm.tar.gz
 		rm -rf gcc-arm64.tar.gz
 	fi
@@ -241,7 +242,7 @@ gen_zip() {
 		tgm "<b>Signing Zip file with AOSP keys!</b>"
 		curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
 		java -jar zipsigner-3.0.jar "$ZIP_FINAL".zip "$ZIP_FINAL"-signed.zip
-		ZIP_FINAL="$ZIP_FINAL-signed"
+		ZIP_SIGN="$ZIP_FINAL-signed"
 		echo -e "\n\e[1;32m[✓] Zip Signed! \e[0m"
 		MESSAGE="[✓] Zip Signed!"
 		live_telegram_update
@@ -254,15 +255,6 @@ gen_zip() {
 }
 
 push() {
-	echo -e "\n\e[1;93m[*] Starting push kernel to Github Release! \e[0m"
-	MESSAGE="[*] Starting push kernel to Github Release!"
-	live_telegram_update
-	# Git Identity Setup
-	git config --global user.name "Hoppless"
-	git config --global user.email "hoppless@proton.me"
-	echo "https://Hoppless:$GH_TOKEN@github.com" >.pwd
-	git config credential.helper "store --file .pwd"
-
 	# Create kernel info
 	echo -e "\n\e[1;93m[*] Generate source changelogs! \e[0m"
 	MESSAGE="[*] Generate source changelogs"
@@ -285,51 +277,80 @@ push() {
 		echo -e "$flog"
 	} >>"$cfile"
 
-	org="Hopireika"
-	rel_repo="release"
-	rel_tag="$(date "+%d%m%Y")"
-	rel_file="$ZIP_FINAL.zip"
-	rel_release="https://github.com/${org}/$rel_repo/releases/tag/$rel_tag"
-	rel_link="https://github.com/$org/$rel_repo/releases/download/$rel_tag/$rel_file/"
-	rel_info="https://github.com/${org}/$rel_repo/blob/main/$cfile"
+	if [[ "$PUSH" == "github" ]]; then
+		echo -e "\n\e[1;93m[*] Starting push kernel to Github Release! \e[0m"
+		MESSAGE="[*] Starting push kernel to Github Release!"
+		live_telegram_update
+		# Git Identity Setup
+		git config --global user.name "Hoppless"
+		git config --global user.email "hoppless@proton.me"
+		echo "https://Hoppless:$GH_TOKEN@github.com" >.pwd
+		git config credential.helper "store --file .pwd"
 
-	git clone https://github.com/$org/$rel_repo
-	cd release
-	cp ../AnyKernel3/$rel_file .
-	cp ../$cfile .
+		org="Hopireika"
+		rel_repo="release"
+		rel_tag="$(date "+%d%m%Y")"
+		if [[ $SIGN == 1 ]]; then
+			rel_file="$ZIP_SIGN.zip"
+		else
+			rel_file="$ZIP_FINAL.zip"
+		fi
+		rel_release="https://github.com/${org}/$rel_repo/releases/tag/$rel_tag"
+		rel_link="https://github.com/$org/$rel_repo/releases/download/$rel_tag/$rel_file/"
+		rel_info="https://github.com/${org}/$rel_repo/blob/main/$cfile"
 
-	git add $cfile
-	git commit -asm "release: Add Hopireika Kernel build $rel_tag"
-	git gc
-	git push https://Hoppless:${GH_TOKEN}@github.com/$org/$rel_repo main -f
+		git clone https://github.com/$org/$rel_repo
+		cd release
+		cp ../AnyKernel3/$rel_file .
+		cp ../$cfile .
 
-	if gh release view "${rel_tag}"; then
-		echo "Uploading build archive to '${rel_tag}'..."
-		gh release upload --clobber "${rel_tag}" "${rel_file}" && {
-			echo "Version ${rel_tag} updated!"
-		}
-	else
-		echo "Creating release with tag '${rel_tag}'..."
-		gh release create "${rel_tag}" "${rel_file}" -t "${rel_date}" && {
-			echo "Version ${rel_tag} released!"
-		}
+		git add $cfile
+		git commit -asm "release: Add Hopireika Kernel build $rel_tag"
+		git gc
+		git push https://Hoppless:${GH_TOKEN}@github.com/$org/$rel_repo main -f
+
+		if gh release view "${rel_tag}"; then
+			echo "Uploading build archive to '${rel_tag}'..."
+			gh release upload --clobber "${rel_tag}" "${rel_file}" && {
+				echo "Version ${rel_tag} updated!"
+			}
+		else
+			echo "Creating release with tag '${rel_tag}'..."
+			gh release create "${rel_tag}" "${rel_file}" -t "${rel_date}" && {
+				echo "Version ${rel_tag} released!"
+			}
+		fi
+		git push https://Hoppless:${GH_TOKEN}@github.com/$org/$rel_repo main -f
+		echo -e "\n\e[1;32m[✓] Kernel succesfully pushed to https://github.com/$org/$rel_repo! \e[0m"
+		MESSAGE="[✓] Kernel succesfully pushed to https://github.com/$org/$rel_repo!"
+		live_telegram_update
+		tgm "
+		<b>✅ Hopireika Kernel Update!</b>
+		<b>• Build date</b>:
+		- <code>$DATE</code>
+		<b>• Kernel info</b>:
+		- <a href='$rel_info'>Here</a>
+		<b>• Download link</b>:
+		- <a href='$rel_link'>Here</a>
+		"
+		cd ..
+	elif [[ "$PUSH" == "telegram" ]]; then
+		cd AnyKernel3
+		cp ../$cfile .
+		if [[ $SIGN == 1 ]]; then
+			rel_file="$ZIP_SIGN.zip"
+		else
+			rel_file="$ZIP_FINAL.zip"
+		fi
+		tgm "
+		<b>✅ Hopireika Kernel Update!</b>
+		<b>• Build date</b>:
+		- <code>$DATE</code>
+		"
+		tgf "$rel_file" "• <b>Compiler</b> : <code>${KBUILD_COMPILER_STRING}</code>"
+		tgf "$cfile" "• <b>Kernel information"
+		cd ..
 	fi
-	git push https://Hoppless:${GH_TOKEN}@github.com/$org/$rel_repo main -f
-	echo -e "\n\e[1;32m[✓] Kernel succesfully pushed to https://github.com/$org/$rel_repo! \e[0m"
-	MESSAGE="[✓] Kernel succesfully pushed to https://github.com/$org/$rel_repo!"
-	live_telegram_update
-
-	cd ..
-
-	tgm "
-	<b>✅ Hopireika Kernel Update!</b>
-	<b>• Build date</b>:
-	- <code>$DATE</code>
-	<b>• Kernel info</b>:
-	- <a href='$rel_info'>Here</a>
-	<b>• Download link</b>:
-	- <a href='$rel_link'>Here</a>
-	"
 
 }
 
