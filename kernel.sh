@@ -58,13 +58,19 @@ clone() {
 	echo " "
 	if [[ $COMPILER == "gcc" ]]; then
 		echo -e "\n\e[1;93m[*] Cloning Fortune GCC \e[0m"
-		git clone --depth=1 https://github.com/Fortune-Toolchains/gcc-arm64 gcc64
-		git clone --depth=1 https://github.com/Fortune-Toolchains/gcc-arm gcc32
+		wget "$(curl -s https://raw.githubusercontent.com/Fortune-Toolchains/gcc-arm/master/gcc-arm-link.txt)" -O "gcc-arm.tar.gz"
+		wget "$(curl -s https://raw.githubusercontent.com/Fortune-Toolchains/gcc-arm/master/gcc-arm64-link.txt)" -O "gcc-arm64.tar.gz"
+		mkdir gcc32 && mkdir gcc64
+		tar -xf gcc-arm.tar.gz -C gcc32
+		tar -xf gcc-arm.tar.gz -C gcc64
+		rm -rf gcc-arm.tar.gz
+		rm -rf gcc-arm64.tar.gz
 	fi
 
 	if [[ $COMPILER == "clang" ]]; then
-		echo -e "\n\e[1;93m[*] Cloning Azure Clang 16 \e[0m"
-		git clone --depth=1 https://gitlab.com/Panchajanya1999/azure-clang.git clang-llvm
+		echo -e "\n\e[1;93m[*] Cloning Fortune Clang 17 \e[0m"
+		wget "$(curl -s https://raw.githubusercontent.com/Fortune-Toolchains/clang/master/fortune-clang-link.txt)" -O "fortune-clang.tar.gz"
+		mkdir clang-llvm && tar -xf fortune-clang.tar.gz -C clang-llvm && rm -rf fortune-clang.tar.gz
 	fi
 
 	if [[ $COMPILER == "neutron" ]]; then
@@ -312,7 +318,6 @@ push() {
 	echo -e "\n\e[1;32m[✓] Kernel succesfully pushed to https://github.com/$org/$rel_repo! \e[0m"
 	MESSAGE="[✓] Kernel succesfully pushed to https://github.com/$org/$rel_repo!"
 	live_telegram_update
-
 
 	cd ..
 
