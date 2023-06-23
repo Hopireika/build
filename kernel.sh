@@ -36,7 +36,7 @@ DEVICE="merlin"
 # Misc info
 CLEAN="1"
 PUSH="$SEND_TO"
-SIGN="0"
+SIGN="1"
 if [[ $SIGN == 1 ]]; then
 	#Check for java
 	if ! hash java 2>/dev/null 2>&1; then
@@ -139,10 +139,6 @@ tgf() {
 		"$2"
 }
 
-live_telegram_update() {
-	curl -X POST -H 'Content-Type: application/json' -d "{\"chat_id\": \"$TELEGRAM_CHAT\", \"text\": \"$MESSAGE...\", \"disable_notification\": true}" https://api.telegram.org/bot$TELEGRAM_TOKEN/editMessageText
-}
-
 ##----------------------------------------------------------##
 
 build_kernel() {
@@ -154,14 +150,14 @@ build_kernel() {
 	tgm "
 <b>🛠 Hopireika Kernel Build Triggered</b>
 <b>-----------------------------------------</b>
-<b>• Architecture</b>   : <code>$ARCH</code>
-<b>• Build Date</b>     : <code>$DATE</code>
-<b>• Device Name</b>    : <code>${MODEL} [${DEVICE}]</code>
-<b>• Defconfig</b>      : <code>$DEFCONFIG</code>
-<b>• Kernel Name</b>    : <code>${ZIPNAME}</code>
-<b>• Kernel Version</b> : <code>${VERSION}</code>
-<b>• Linux Version</b>  : <code>$(make kernelversion)</code>
-<b>• Compiler Name</b>  : <code>${KBUILD_COMPILER_STRING}</code>
+<b>[*] Architecture</b>   => <code>$ARCH</code>
+<b>[*] Build Date</b>     => <code>$DATE</code>
+<b>[*] Device Name</b>    => <code>${MODEL} [${DEVICE}]</code>
+<b>[*] Defconfig</b>      => <code>$DEFCONFIG</code>
+<b>[*] Kernel Name</b>    => <code>${ZIPNAME}</code>
+<b>[*] Kernel Version</b> => <code>${VERSION}</code>
+<b>[*] Linux Version</b>  => <code>$(make kernelversion)</code>
+<b>[*] Compiler Name</b>  => <code>${KBUILD_COMPILER_STRING}</code>
 <b>------------------------------------------</b>
 "
 
@@ -197,8 +193,6 @@ build_kernel() {
 	fi
 
 	echo -e "\n\e[1;93m[*] Building Kernel! \e[0m"
-	MESSAGE="[*] Building Kernel!"
-	live_telegram_update
 	make -kj"$PROCS" O=out \
 		V=$VERBOSE \
 		"${MAKE[@]}" 2>&1 | tee error.log
@@ -208,15 +202,11 @@ build_kernel() {
 
 	if [[ -f "$KERNEL_DIR"/out/arch/arm64/boot/Image.gz-dtb ]]; then
 		echo -e "\n\e[1;32m[✓] Kernel successfully compiled! \e[0m"
-		MESSAGE="[✓] Kernel successfully compiled!"
-		live_telegram_update
 		gen_zip
 		push
 	else
 		echo -e "\n\e[1;32m[✗] Build Failed! \e[0m"
-		MESSAGE="[✗] Build Failed!"
-		live_telegram_update
-		tgf "error.log" "*Build failed to compile after $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds*"
+		tgf "error.log" "[X] Build failed to compile after $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds*"
 	fi
 
 }
@@ -225,8 +215,6 @@ build_kernel() {
 
 gen_zip() {
 	echo -e "\n\e[1;32m[*] Create a flashable zip! \e[0m"
-	MESSAGE="[*] Create a flashable zip!"
-	live_telegram_update
 	mv "$KERNEL_DIR"/out/arch/arm64/boot/Image.gz-dtb AnyKernel3
 	mv "$KERNEL_DIR"/out/arch/arm64/boot/dts/mediatek/mt6768.dtb AnyKernel3
 	mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel3
@@ -237,28 +225,20 @@ gen_zip() {
 	if [[ $SIGN == 1 ]]; then
 		## Sign the zip before sending it to telegram
 		echo -e "\n\e[1;32m[*] Sgining a zip! \e[0m"
-		MESSAGE="[*] Sgining a zip!"
-		live_telegram_update
-		tgm "<b>Signing Zip file with AOSP keys!</b>"
+		tgm "<b>[*] Signing Zip file with AOSP keys!</b>"
 		curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
 		java -jar zipsigner-3.0.jar "$ZIP_FINAL".zip "$ZIP_FINAL"-signed.zip
 		ZIP_SIGN="$ZIP_FINAL-signed"
 		echo -e "\n\e[1;32m[✓] Zip Signed! \e[0m"
-		MESSAGE="[✓] Zip Signed!"
-		live_telegram_update
 	fi
 
 	cd ..
 	echo -e "\n\e[1;32m[✓] Create flashable kernel completed! \e[0m"
-	MESSAGE="[✓] Create flashable kernel completed!"
-	live_telegram_update
 }
 
 push() {
 	# Create kernel info
 	echo -e "\n\e[1;93m[*] Generate source changelogs! \e[0m"
-	MESSAGE="[*] Generate source changelogs"
-	live_telegram_update
 	cfile="kernel-info-$ZDATE.md"
 	log="$(git log --oneline -n 10)"
 	flog="$(echo "$log" | sed -E 's/^([a-zA-Z0-9]+) (.*)/* \2/')"
@@ -279,8 +259,6 @@ push() {
 
 	if [[ "$PUSH" == "github" ]]; then
 		echo -e "\n\e[1;93m[*] Starting push kernel to Github Release! \e[0m"
-		MESSAGE="[*] Starting push kernel to Github Release!"
-		live_telegram_update
 		# Git Identity Setup
 		git config --global user.name "Hoppless"
 		git config --global user.email "hoppless@proton.me"
@@ -322,16 +300,14 @@ push() {
 		fi
 		git push https://Hoppless:${GH_TOKEN}@github.com/$org/$rel_repo main -f
 		echo -e "\n\e[1;32m[✓] Kernel succesfully pushed to https://github.com/$org/$rel_repo! \e[0m"
-		MESSAGE="[✓] Kernel succesfully pushed to https://github.com/$org/$rel_repo!"
-		live_telegram_update
 		tgm "
 		<b>✅ Hopireika Kernel Update!</b>
-		<b>• Build date</b>:
-		- <code>$DATE</code>
-		<b>• Kernel info</b>:
-		- <a href='$rel_info'>Here</a>
-		<b>• Download link</b>:
-		- <a href='$rel_link'>Here</a>
+		<b>[*] Build date</b>:
+		=> <code>$DATE</code>
+		<b>[*] Kernel info</b>:
+		=> <a href='$rel_info'>Here</a>
+		<b>[*] Download link</b>:
+		=> <a href='$rel_link'>Here</a>
 		"
 		cd ..
 	elif [[ "$PUSH" == "telegram" ]]; then
@@ -344,11 +320,11 @@ push() {
 		fi
 		tgm "
 		<b>✅ Hopireika Kernel Update!</b>
-		<b>• Build date</b>:
+		<b>[*] Build date</b>:
 		- <code>$DATE</code>
 		"
-		tgf "$rel_file" "• <b>Compiler</b> : <code>${KBUILD_COMPILER_STRING}</code>"
-		tgf "$cfile" "• <b>Kernel information"
+		tgf "$rel_file" "<b>[*] Compiler</b> => <code>${KBUILD_COMPILER_STRING}</code>"
+		tgf "$cfile" "<b>[*] Kernel information</b>"
 		cd ..
 	fi
 
