@@ -28,4 +28,5 @@ jobs:
         run: |
              git clone https://Hoppless:$GH_TOKEN@github.com/KuroSeinenbutV2/Quantum-Electro kernel
              cp kernel.sh kernel
+             cp import-ksu.sh kernel
              cd kernel && bash kernel.sh

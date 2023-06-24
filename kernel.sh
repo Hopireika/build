@@ -161,6 +161,10 @@ build_kernel() {
 <b>------------------------------------------</b>
 "
 
+	if [ ! -f "${KERNEL_DIR}/KernelSU/README.md" ]; then
+		ksu
+	fi
+
 	echo "-$ZIPNAME-$VERSION" >>localversion
 	make O=out $DEFCONFIG
 	BUILD_START=$(date +"%s")
@@ -328,6 +332,15 @@ push() {
 		cd ..
 	fi
 
+}
+
+function ksu() {
+	bash import-ksu.sh
+	echo "CONFIG_KPROBES=y" >>arch/arm64/configs/${DEFCONFIG}
+	echo "CONFIG_HAVE_KPROBES=y" >>arch/arm64/configs/${DEFCONFIG}
+	echo "CONFIG_KPROBE_EVENTS=y" >>arch/arm64/configs/${DEFCONFIG}
+	echo "CONFIG_OVERLAY_FS=y" >>arch/arm64/configs/${DEFCONFIG}
+	rm -rf KernelSU && git clone https://github.com/tiann/KernelSU
 }
 
 clone
