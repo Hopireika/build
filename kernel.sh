@@ -19,19 +19,19 @@ GCC32_DIR=$KERNEL_DIR/gcc32
 TC_DIR=$KERNEL_DIR/clang-llvm
 
 # Kernel info
-ZIPNAME="Hopireika"
-VERSION="Sunflower"
-AUTHOR="Hoppless"
+ZIPNAME="QuantumKyaru-OSS"
+VERSION="E1"
+AUTHOR="KuroSeinen"
 ARCH=arm64
-DEFCONFIG="merlin.config"
+DEFCONFIG="sweet_user_defconfig"
 COMPILER=${COMP}
 LTO="1"
 POLLY="1"
 LINKER=ld.lld
 
 # Device info
-MODEL="Redmi Note 9"
-DEVICE="merlin"
+MODEL="Redmi Note 10 Pro"
+DEVICE="sweet"
 
 # Misc info
 CLEAN="1"
@@ -83,19 +83,19 @@ clone() {
 
 	if [[ $LTO == "1" ]]; then
 		if [[ $COMPILER == "clang" || $COMPILER == "neutron" ]]; then
-			echo "CONFIG_LTO_CLANG=y" >>arch/arm64/configs/hopireika_defconfig
-			echo "CONFIG_LTO=y" >>arch/arm64/configs/hopireika_defconfig
+			echo "CONFIG_LTO_CLANG=y" >>arch/arm64/configs/sweet_user_defconfig
+			echo "CONFIG_LTO=y" >>arch/arm64/configs/sweet_user_defconfig
 		fi
 	fi
 
 	if [[ $POLLY == "1" ]]; then
 		if [[ $COMPILER == "clang" || $COMPILER == "neutron" ]]; then
-			echo "CONFIG_LLVM_POLLY=y" >>arch/arm64/configs/hopireika_defconfig
+			echo "CONFIG_LLVM_POLLY=y" >>arch/arm64/configs/sweet_user_defconfig
 		fi
 	fi
 
 	echo -e "\n\e[1;93m[*] Cloning AnyKernel3 \e[0m"
-	git clone --depth 1 --no-single-branch https://github.com/Hopireika/AnyKernel3.git -b merlin
+	git clone --depth 1 --no-single-branch https://github.com/KuroSeinenbutV2/AnyKernel3.git -b sweet
 }
 
 ##------------------------------------------------------##
@@ -148,7 +148,7 @@ build_kernel() {
 	fi
 
 	tgm "
-<b>🛠 Hopireika Kernel Build Triggered</b>
+<b>🛠 QuantumKyaru Kernel Build Triggered</b>
 <b>-----------------------------------------</b>
 <b>[*] Architecture</b>   => <code>$ARCH</code>
 <b>[*] Build Date</b>     => <code>$DATE</code>
@@ -162,7 +162,7 @@ build_kernel() {
 "
 
 	echo "-$ZIPNAME-$VERSION" >>localversion
-	make O=out hopireika_defconfig xiaomi/$DEFCONFIG
+	make O=out $DEFCONFIG
 	BUILD_START=$(date +"%s")
 
 	if [[ $COMPILER == "clang" || $COMPILER == "neutron" ]]; then
@@ -301,7 +301,7 @@ push() {
 		git push https://Hoppless:${GH_TOKEN}@github.com/$org/$rel_repo main -f
 		echo -e "\n\e[1;32m[✓] Kernel succesfully pushed to https://github.com/$org/$rel_repo! \e[0m"
 		tgm "
-		<b>✅ Hopireika Kernel Update!</b>
+		<b>✅ QuantumKyaru Kernel Update!</b>
 		<b>[*] Build date</b>:
 		=> <code>$DATE</code>
 		<b>[*] Kernel info</b>:
@@ -319,7 +319,7 @@ push() {
 			rel_file="$ZIP_FINAL.zip"
 		fi
 		tgm "
-		<b>✅ Hopireika Kernel Update!</b>
+		<b>✅ QuantumKyaru Kernel Update!</b>
 		<b>[*] Build date</b>:
 		- <code>$DATE</code>
 		"
