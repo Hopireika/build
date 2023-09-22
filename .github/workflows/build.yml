@@ -32,5 +32,5 @@ jobs:
              git config --global user.email "hoppless@proton.me"
              echo "https://Hoppless:$GH_TOKEN@github.com" > ~/.git-credentials
              git config --global credential.helper "store --file ~/.git-credentials"
-             git clone https://github.com/Hopireika/kernel_xiaomi_mt6768 kernel
+             git clone --depth=1 https://github.com/fleur-devs/kernel_xiaomi_fleur kernel
              cp kernel.sh kernel && cd kernel && bash kernel.sh

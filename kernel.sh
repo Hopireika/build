@@ -16,19 +16,19 @@ TC_DIR=$KERNEL_DIR/clang-llvm
 
 # Kernel info
 KNAME="Hopireika"
-KVERSION="Trixila"
+KVERSION="Test"
 AUTHOR="Kizziama"
 ARCH=arm64
-DEFCONFIG="merlin_defconfig"
+DEFCONFIG="fleur_defconfig"
 COMPILER="${COMP}"
-LTO="1"
-POLLY="1"
-KERNELSU="1"
+LTO="0"
+POLLY="0"
+KERNELSU="0"
 LINKER=ld.lld
 
 # Device info
-MODEL="Redmi Note 9"
-DEVICE="merlin"
+MODEL="Poco M4 Pro"
+DEVICE="fleur"
 
 # Misc info
 CLEAN="0"
@@ -97,6 +97,12 @@ clone() {
 			bash <(curl -s https://raw.githubusercontent.com/Hoppless/antman/main/antman) --patch=glibc
 			cd ..
 		fi
+		if [[ $COMPILER == "aosp" ]]; then
+			echo -e "\e[1;93m[*] Cloning AOSP Clang! \e[0m"
+			git clone --depth=1 https://gitlab.com/sarthakroy2002/android_prebuilts_clang_host_linux-x86_clang-r437112b clang-llvm
+			git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 gcc64
+			git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9 gcc32
+		fi
 	fi
 
 	if [[ $LTO == "1" ]]; then
@@ -121,7 +127,7 @@ clone() {
 
 	if ! [[ -d "AnyKernel3" ]]; then
 		echo -e "\n\e[1;93m[*] Cloning AnyKernel3 \e[0m"
-		git clone --depth 1 --no-single-branch https://github.com/Hopireika/AnyKernel3.git -b merlin
+		git clone --depth 1 --no-single-branch https://github.com/Hopireika/AnyKernel3.git -b fleur
 	fi
 }
 
@@ -138,6 +144,9 @@ exports() {
 	elif [[ $COMPILER == "dtc" ]]; then
 		KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
 		PATH=PATH=$TC_DIR/bin/:$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
+	elif [[ $COMPILER == "aosp" ]]; then
+		KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+		PATH=$TC_DIR/bin/:$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
 	elif [[ $COMPILER == "gcc" ]]; then
 		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
 		PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
@@ -192,8 +201,6 @@ build_kernel() {
 <b>[*] Compiler Name</b>  => <code>${KBUILD_COMPILER_STRING}</code>
 <b>------------------------------------------</b>
 "
-
-	echo "-$KNAME-$KVERSION" >>localversion
 	make O=out $DEFCONFIG
 	BUILD_START=$(date +"%s")
 
@@ -209,6 +216,13 @@ build_kernel() {
 			NM=llvm-nm
 			OBJCOPY=llvm-objcopy
 			LD="$LINKER"
+		)
+	elif [[ $COMPILER == "aosp" ]]; then
+		MAKE+=(
+			CC=clang
+			CLANG_TRIPLE=aarch64-linux-gnu-
+			CROSS_COMPILE=aarch64-linux-android-
+			CROSS_COMPILE_ARM32=arm-linux-androideabi-
 		)
 	elif [[ $COMPILER == "gcc" ]]; then
 		MAKE+=(
