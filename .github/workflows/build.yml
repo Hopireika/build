@@ -12,7 +12,7 @@ on:
 
 env:
   TELEGRAM_TOKEN: ${{ secrets.TG_TOKEN }}
-  TELEGRAM_CHAT: ${{ secrets.TG_CHAT }}
+  TELEGRAM_CHAT: "-1001655956753"
   COMP: ${{ github.event.inputs.toolchain }}
   PUSH_TO: ${{ github.event.inputs.pushto }}
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
